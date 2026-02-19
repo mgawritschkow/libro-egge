@@ -1,0 +1,283 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-02-19-initial-schema-libroegge
+      author: yourname
+      comment: Initial schema for LIBROEGGE - books, users, orders, reviews (extended books table for MVP)
+      changes:
+        # ── books table ───────────────────────────────────────────────────────
+        - createTable:
+            tableName: books
+            columns:
+              - column:
+                  name: id
+                  type: serial
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: isbn
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: title
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: author
+                  type: varchar(255)
+                  constraints:
+                    nullable: false # string for MVP; later → authors table + relation
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: publication_year
+                  type: integer
+                  constraints:
+                    nullable: true
+              - column:
+                  name: genre
+                  type: varchar(100)
+                  constraints:
+                    nullable: true # e.g. "Fiction", "Science", "Mystery"
+              - column:
+                  name: language
+                  type: varchar(50)
+                  constraints:
+                    nullable: true # e.g. "English", "German", "French"
+              - column:
+                  name: price
+                  type: decimal(10,2)
+                  constraints:
+                    nullable: true # e.g. 24.99 – important if selling/ordering
+              - column:
+                  name: stock_quantity
+                  type: integer
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        # Optional: add simple index for faster title/author search (MVP performance)
+        - createIndex:
+            indexName: idx_books_title
+            tableName: books
+            columns:
+              - column:
+                  name: title
+
+        - createIndex:
+            indexName: idx_books_author
+            tableName: books
+            columns:
+              - column:
+                  name: author
+
+        # ── users table ───────────────────────────────────────────────────────
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: serial
+                  constraints:
+                    primaryKey: true
+
+              - column:
+                  name: email
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+
+              - column:
+                  name: password_hash
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: firstname
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: lastname
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: role
+                  type: varchar(50)
+                  defaultValue: 'USER'
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: phone_number
+                  type: varchar(30)
+                  constraints:
+                    nullable: true
+
+              - column:
+                  name: address
+                  type: text
+                  constraints:
+                    nullable: true
+
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: is_active
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+
+        # ── orders table ──────────────────────────────────────────────────────
+        - createTable:
+            tableName: orders
+            columns:
+              - column:
+                  name: id
+                  type: serial
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: order_nr
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: book_id
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: integer
+                  constraints:
+                    nullable: false
+
+        # Foreign keys for orders
+        - addForeignKeyConstraint:
+            baseTableName: orders
+            baseColumnNames: book_id
+            constraintName: fk_orders_books
+            referencedTableName: books
+            referencedColumnNames: id
+            onDelete: CASCADE
+
+        - addForeignKeyConstraint:
+            baseTableName: orders
+            baseColumnNames: user_id
+            constraintName: fk_orders_users
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+
+        # ── reviews table ─────────────────────────────────────────────────────
+        - createTable:
+            tableName: reviews
+            columns:
+              - column:
+                  name: id
+                  type: serial
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: rating
+                  type: integer
+                  constraints:
+                    nullable: false
+                    checkConstraint: rating >= 1 AND rating <= 5
+              - column:
+                  name: date
+                  type: timestamp with time zone
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: book_id
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: integer
+                  constraints:
+                    nullable: false
+
+        # Foreign keys for reviews
+        - addForeignKeyConstraint:
+            baseTableName: reviews
+            baseColumnNames: book_id
+            constraintName: fk_reviews_books
+            referencedTableName: books
+            referencedColumnNames: id
+            onDelete: CASCADE
+
+        - addForeignKeyConstraint:
+            baseTableName: reviews
+            baseColumnNames: user_id
+            constraintName: fk_reviews_users
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+
+        # ── Performance indexes ───────────────────────────────────────────────
+        - createIndex:
+            indexName: idx_reviews_book_id
+            tableName: reviews
+            columns:
+              - column:
+                  name: book_id
+
+        - createIndex:
+            indexName: idx_reviews_user_id
+            tableName: reviews
+            columns:
+              - column:
+                  name: user_id
+
+        - createIndex:
+            indexName: idx_orders_book_id
+            tableName: orders
+            columns:
+              - column:
+                  name: book_id
+
+        - createIndex:
+            indexName: idx_orders_user_id
+            tableName: orders
+            columns:
+              - column:
+                  name: user_id

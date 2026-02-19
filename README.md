@@ -22,6 +22,110 @@ In the project root, JHipster generates configuration files for tools like git, 
   JHipster installs Node and npm locally using the build tool by default. This wrapper makes sure npm is installed locally and uses it avoiding some differences different versions can cause. By using `./npmw` instead of the traditional `npm` you can configure a Node-less environment to develop or test your application.
 - `/src/main/docker` - Docker configurations for the application and services that the application depends on
 
+## Database
+
+![img.png](img.png)
+
+### DDL Script for postgres DB
+
+```postgresql
+-- Create the books table
+CREATE TABLE books (
+   id                BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+   title             VARCHAR(255) NOT NULL,
+   author            VARCHAR(255) NOT NULL,
+   isbn              VARCHAR(20) UNIQUE,
+   publication_year  INTEGER,
+   genre             VARCHAR(100),
+   description       TEXT,
+   created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+   updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Create the users table
+CREATE TABLE users (
+   id              SERIAL PRIMARY KEY,
+   email           VARCHAR(255) NOT NULL UNIQUE,
+   password_hash   VARCHAR(255) NOT NULL,
+   firstname       VARCHAR(255) NOT NULL,
+   lastname        VARCHAR(255) NOT NULL,
+   role            VARCHAR(50) NOT NULL DEFAULT 'USER'
+     CHECK (role IN ('USER', 'ADMIN')),
+   is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+   phone_number    VARCHAR(30),
+   address         TEXT,
+   created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Don't forget the trigger and indexes as before
+
+-- Create the orders table (FK to books + new FK to users)
+CREATE TABLE orders (
+    id       serial PRIMARY KEY,
+    order_nr varchar(50) UNIQUE NOT NULL,
+    book_id  integer NOT NULL,
+    user_id  integer NOT NULL,
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Create the reviews table (FKs to books and users)
+CREATE TABLE reviews (
+    id      serial PRIMARY KEY,
+    rating  integer NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    date    timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    book_id integer NOT NULL,
+    user_id integer NOT NULL,
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Performance indexes on foreign keys
+CREATE INDEX idx_reviews_book_id  ON reviews(book_id);
+CREATE INDEX idx_reviews_user_id  ON reviews(user_id);
+CREATE INDEX idx_orders_book_id   ON orders(book_id);
+CREATE INDEX idx_orders_user_id   ON orders(user_id);
+```
+
+## Mock Data
+
+### Table: BOOKS
+
+```sql
+INSERT INTO books (isbn, title, author, description, publication_year, genre, language, price, stock_quantity, created_at, updated_at) VALUES
+('978-0142437230', 'Pride and Prejudice', 'Jane Austen', 'A classic romance novel exploring love, class, and societal expectations in 19th-century England.', 1813, 'Romance', 'English', 9.99, 45, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('978-0547928227', 'The Hobbit', 'J.R.R. Tolkien', 'Bilbo Baggins'' unexpected journey with dwarves and a dragon in Middle-earth.', 1937, 'Fantasy', 'English', 12.50, 28, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('978-0061120084', 'To Kill a Mockingbird', 'Harper Lee', 'A powerful story about racial injustice and moral growth in the American South.', 1960, 'Fiction', 'English', 8.75, 62, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('978-0307474278', '1984', 'George Orwell', 'Dystopian novel about totalitarianism, surveillance, and truth manipulation.', 1949, 'Dystopian', 'English', 11.20, 19, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('978-0743273565', 'The Great Gatsby', 'F. Scott Fitzgerald', 'A tragic tale of love, wealth, and the American Dream in the Jazz Age.', 1925, 'Classic', 'English', 7.99, 53, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('978-3453318519', 'Der Vorleser', 'Bernhard Schlink', 'A haunting German novel about love, guilt, and the legacy of the Holocaust.', 1995, 'Drama', 'German', 10.80, 14, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('978-3551551672', 'Harry Potter und der Stein der Weisen', 'J.K. Rowling', 'The first book in the magical Harry Potter series.', 1997, 'Fantasy', 'German', 14.99, 37, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('978-3104027258', 'Homo Deus', 'Yuval Noah Harari', 'A provocative exploration of humanity''s future in the age of data and algorithms.', 2015, 'Non-Fiction', 'German', 24.00, 8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('978-2266264327', 'L''Étranger', 'Albert Camus', 'Existential novel about absurdity, indifference, and the human condition.', 1942, 'Philosophy', 'French', 8.50, 22, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('978-8804668787', 'Il nome della rosa', 'Umberto Eco', 'A medieval murder mystery filled with semiotics, theology, and libraries.', 1980, 'Historical Mystery', 'Italian', 16.90, 11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+```
+
+### Table: USERS
+
+```sql
+INSERT INTO users (
+    email,
+    password_hash,
+    forname,
+    lastname,
+    role,
+    phone_number,
+    address,
+    is_active
+) VALUES
+    ('anna.muster@example.com',   '$2b$12$fakehash1234567890', 'Anna',   'Muster',   'USER',  '+49 151 12345678', 'Musterstraße 12, 80331 München', TRUE),
+    ('max.beispiel@email.de',      '$2b$12$fakehash0987654321', 'Max',    'Beispiel', 'USER',  '+49 176 98765432', 'Beispielweg 5, 10115 Berlin',     TRUE),
+    ('sophie.leserin@web.de',      '$2b$12$fakehashabcdef1234', 'Sophie', 'Leserin',  'USER',  NULL,               'Leserallee 3, 50667 Köln',        TRUE),
+    ('admin@libroegge.de',         '$2b$12$adminhashstrong2026', 'Admin',  'Admin',    'ADMIN', '+49 30 5555555',   'Verwaltung 1, 20095 Hamburg',     TRUE),
+    ('inactive.user@test.com',     '$2b$12$fakehashzzzzzzzzzz', 'Inactive','User',     'USER',  NULL,               NULL,                              FALSE);
+```
+
 ## Development
 
 The build system will install automatically the recommended version of Node and npm.
