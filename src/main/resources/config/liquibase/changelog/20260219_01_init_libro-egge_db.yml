@@ -215,28 +215,60 @@ databaseChangeLog:
                   type: serial
                   constraints:
                     primaryKey: true
-              - column:
-                  name: rating
-                  type: integer
-                  constraints:
-                    nullable: false
-                    checkConstraint: rating >= 1 AND rating <= 5
-              - column:
-                  name: date
-                  type: timestamp with time zone
-                  defaultValueComputed: CURRENT_TIMESTAMP
+
               - column:
                   name: book_id
                   type: integer
                   constraints:
                     nullable: false
+
               - column:
                   name: user_id
                   type: integer
                   constraints:
                     nullable: false
 
-        # Foreign keys for reviews
+              - column:
+                  name: rating
+                  type: integer
+                  constraints:
+                    nullable: false
+                    checkConstraint: rating >= 1 AND rating <= 5
+
+              - column:
+                  name: title
+                  type: varchar(150)
+                  constraints:
+                    nullable: true
+
+              - column:
+                  name: comment
+                  type: text
+                  constraints:
+                    nullable: true
+
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: is_helpful_count
+                  type: integer
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+
+        # Foreign keys
         - addForeignKeyConstraint:
             baseTableName: reviews
             baseColumnNames: book_id
@@ -253,31 +285,21 @@ databaseChangeLog:
             referencedColumnNames: id
             onDelete: CASCADE
 
-        # ── Performance indexes ───────────────────────────────────────────────
+        # Indexes (performance for book/user filtering)
         - createIndex:
             indexName: idx_reviews_book_id
             tableName: reviews
             columns:
-              - column:
-                  name: book_id
+              - column: { name: book_id }
 
         - createIndex:
             indexName: idx_reviews_user_id
             tableName: reviews
             columns:
-              - column:
-                  name: user_id
+              - column: { name: user_id }
 
         - createIndex:
-            indexName: idx_orders_book_id
-            tableName: orders
+            indexName: idx_reviews_rating
+            tableName: reviews
             columns:
-              - column:
-                  name: book_id
-
-        - createIndex:
-            indexName: idx_orders_user_id
-            tableName: orders
-            columns:
-              - column:
-                  name: user_id
+              - column: { name: rating }

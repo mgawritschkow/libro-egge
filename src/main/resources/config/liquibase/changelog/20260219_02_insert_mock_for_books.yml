@@ -34,3 +34,28 @@ databaseChangeLog:
               ('sophie.leserin@web.de',      '$2b$12$fakehashabcdef1234', 'Sophie', 'Leserin',  'USER',  NULL,               'Leserallee 3, 50667 Köln',        TRUE),
               ('admin@libroegge.de',         '$2b$12$adminhashstrong2026', 'Admin',  'Admin',    'ADMIN', '+49 30 5555555',   'Verwaltung 1, 20095 Hamburg',     TRUE),
               ('inactive.user@test.com',     '$2b$12$fakehashzzzzzzzzzz', 'Inactive','User',     'USER',  NULL,               NULL,                              FALSE);
+        - sql:
+            sql: |
+              INSERT INTO reviews (
+              book_id, user_id, rating, title, comment,created_at, updated_at, is_helpful_count
+              ) VALUES
+              (1, 1, 5, 'A timeless favorite', 'Jane Austen’s wit is unmatched. Elizabeth Bennet is such an icon.',
+              CURRENT_TIMESTAMP - 18, CURRENT_TIMESTAMP - 18, 14),
+              (1, 3, 4, 'Charming but dated', 'Loved the romance, but some social commentary feels old-fashioned now.',
+              CURRENT_TIMESTAMP - 12, CURRENT_TIMESTAMP - 12, 5),
+              (2, 2, 5, 'Perfect adventure', 'Bilbo’s journey is pure magic. Read it as a child and still love it.',
+              CURRENT_TIMESTAMP - 25, CURRENT_TIMESTAMP - 25, 11),
+              (2, 4, 5, 'Epic fantasy start', 'Tolkien at his most accessible. Great introduction to Middle-earth.',
+              CURRENT_TIMESTAMP - 9, CURRENT_TIMESTAMP - 9, 8),
+              (3, 1, 5, 'Profound and necessary', 'Harper Lee captures empathy and injustice so powerfully.',
+              CURRENT_TIMESTAMP - 7, CURRENT_TIMESTAMP - 7, 19),
+              (3, 5, 5, 'Still relevant today', 'Atticus Finch is a role model. Everyone should read this.',
+              CURRENT_TIMESTAMP - 4, CURRENT_TIMESTAMP - 4, 13),
+              (4, 3, 4, 'Unsettling masterpiece', 'Big Brother is watching – and it feels more real every year.',
+              CURRENT_TIMESTAMP - 15, CURRENT_TIMESTAMP - 15, 10),
+              (4, 2, 5, 'Chilling warning', 'Orwell predicted so much. A must-read for understanding power.',
+              CURRENT_TIMESTAMP - 6, CURRENT_TIMESTAMP - 6, 7),
+              (5, 4, 3, 'Beautiful writing, empty story', 'Gorgeous prose, but the characters left me cold.',
+              CURRENT_TIMESTAMP - 10, CURRENT_TIMESTAMP - 10, 4),
+              (5, 1, 4, 'The American Dream dissected', 'Fitzgerald nails the illusion of wealth and happiness.',
+              CURRENT_TIMESTAMP - 2, CURRENT_TIMESTAMP - 2, 6);
