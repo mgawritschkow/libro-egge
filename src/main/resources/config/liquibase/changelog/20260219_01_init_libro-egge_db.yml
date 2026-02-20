@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
       id: 2026-02-19-initial-schema-libroegge
-      author: yourname
+      author: michael.gawritschkow
       comment: Initial schema for LIBROEGGE - books, users, orders, reviews (extended books table for MVP)
       changes:
         # ── books table ───────────────────────────────────────────────────────
@@ -172,39 +172,151 @@ databaseChangeLog:
                   type: serial
                   constraints:
                     primaryKey: true
-              - column:
-                  name: order_nr
-                  type: varchar(50)
-                  constraints:
-                    nullable: false
-                    unique: true
-              - column:
-                  name: book_id
-                  type: integer
-                  constraints:
-                    nullable: false
+
               - column:
                   name: user_id
                   type: integer
                   constraints:
                     nullable: false
 
-        # Foreign keys for orders
-        - addForeignKeyConstraint:
-            baseTableName: orders
-            baseColumnNames: book_id
-            constraintName: fk_orders_books
-            referencedTableName: books
-            referencedColumnNames: id
-            onDelete: CASCADE
+              - column:
+                  name: order_nr
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+                    unique: true # e.g. ORD-20260219-001
 
+              - column:
+                  name: status
+                  type: varchar(50)
+                  defaultValue: 'PENDING'
+                  constraints:
+                    nullable: false # PENDING, PAID, SHIPPED, DELIVERED, CANCELLED
+
+              - column:
+                  name: total_amount
+                  type: decimal(10,2)
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: shipping_address
+                  type: text
+                  constraints:
+                    nullable: true # simple text for MVP
+
+              - column:
+                  name: payment_method
+                  type: varchar(50)
+                  constraints:
+                    nullable: true # e.g. 'CREDIT_CARD', 'PAYPAL'
+
+        # Foreign key to users
         - addForeignKeyConstraint:
             baseTableName: orders
             baseColumnNames: user_id
             constraintName: fk_orders_users
             referencedTableName: users
             referencedColumnNames: id
+            onDelete: RESTRICT # don't delete orders if user deleted
+
+        # Indexes
+        - createIndex:
+            indexName: idx_orders_user_id
+            tableName: orders
+            columns:
+              - column: { name: user_id }
+
+        - createIndex:
+            indexName: idx_orders_status
+            tableName: orders
+            columns:
+              - column: { name: status }
+
+        # ── order_items table (line items) ────────────────────────────────────
+        - createTable:
+            tableName: order_items
+            columns:
+              - column:
+                  name: id
+                  type: serial
+                  constraints:
+                    primaryKey: true
+
+              - column:
+                  name: order_id
+                  type: integer
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: book_id
+                  type: integer
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: quantity
+                  type: integer
+                  constraints:
+                    nullable: false
+                    checkConstraint: quantity > 0
+
+              - column:
+                  name: unit_price
+                  type: decimal(10,2)
+                  constraints:
+                    nullable: false # price at time of order
+
+              - column:
+                  name: subtotal
+                  type: decimal(10,2)
+                  constraints:
+                    nullable: false # quantity × unit_price
+
+        # Foreign keys
+        - addForeignKeyConstraint:
+            baseTableName: order_items
+            baseColumnNames: order_id
+            constraintName: fk_order_items_orders
+            referencedTableName: orders
+            referencedColumnNames: id
             onDelete: CASCADE
+
+        - addForeignKeyConstraint:
+            baseTableName: order_items
+            baseColumnNames: book_id
+            constraintName: fk_order_items_books
+            referencedTableName: books
+            referencedColumnNames: id
+            onDelete: RESTRICT
+
+        # Indexes
+        - createIndex:
+            indexName: idx_order_items_order_id
+            tableName: order_items
+            columns:
+              - column: { name: order_id }
+
+        - createIndex:
+            indexName: idx_order_items_book_id
+            tableName: order_items
+            columns:
+              - column: { name: book_id }
 
         # ── reviews table ─────────────────────────────────────────────────────
         - createTable:
