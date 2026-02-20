@@ -24,69 +24,110 @@ In the project root, JHipster generates configuration files for tools like git, 
 
 ## Database
 
-![img.png](img.png)
+![libro-egge.drawio.png](libro-egge.drawio.png)
 
 ### DDL Script for postgres DB
 
-```postgresql
--- Create the books table
+````postgresql
+-- Books table
 CREATE TABLE books (
-   id                BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-   title             VARCHAR(255) NOT NULL,
-   author            VARCHAR(255) NOT NULL,
-   isbn              VARCHAR(20) UNIQUE,
-   publication_year  INTEGER,
-   genre             VARCHAR(100),
-   description       TEXT,
-   created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-   updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+                     id              BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+                     title           VARCHAR(255) NOT NULL,
+                     author          VARCHAR(255) NOT NULL,
+                     isbn            VARCHAR(20) UNIQUE,
+                     publication_year INTEGER,
+                     genre           VARCHAR(100),
+                     description     TEXT,
+                     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
--- Create the users table
+-- Users table
 CREATE TABLE users (
-   id              SERIAL PRIMARY KEY,
-   email           VARCHAR(255) NOT NULL UNIQUE,
-   password_hash   VARCHAR(255) NOT NULL,
-   firstname       VARCHAR(255) NOT NULL,
-   lastname        VARCHAR(255) NOT NULL,
-   role            VARCHAR(50) NOT NULL DEFAULT 'USER'
-     CHECK (role IN ('USER', 'ADMIN')),
-   is_active       BOOLEAN NOT NULL DEFAULT TRUE,
-   phone_number    VARCHAR(30),
-   address         TEXT,
-   created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+                     id              SERIAL PRIMARY KEY,
+                     email           VARCHAR(255) NOT NULL UNIQUE,
+                     password_hash   VARCHAR(255) NOT NULL,
+                     firstname       VARCHAR(255) NOT NULL,
+                     lastname        VARCHAR(255) NOT NULL,
+                     role            VARCHAR(50) NOT NULL DEFAULT 'USER'
+                       CHECK (role IN ('USER', 'ADMIN')),
+                     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+                     phone_number    VARCHAR(30),
+                     address         TEXT,
+                     created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                     updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Don't forget the trigger and indexes as before
-
--- Create the orders table (FK to books + new FK to users)
+-- Orders table (header – one per order)
 CREATE TABLE orders (
-    id       serial PRIMARY KEY,
-    order_nr varchar(50) UNIQUE NOT NULL,
-    book_id  integer NOT NULL,
-    user_id  integer NOT NULL,
-    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                      id              SERIAL PRIMARY KEY,
+                      order_nr        VARCHAR(50) UNIQUE NOT NULL,
+                      user_id         INTEGER NOT NULL,
+                      status          VARCHAR(30) NOT NULL DEFAULT 'PENDING'
+                        CHECK (status IN ('PENDING', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELLED')),
+                      total_amount    DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                      shipping_address TEXT,
+                      payment_method  VARCHAR(50),
+                      created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                      updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 );
 
--- Create the reviews table (FKs to books and users)
+-- Order items (many per order)
+CREATE TABLE order_items (
+                           id              SERIAL PRIMARY KEY,
+                           order_id        INTEGER NOT NULL,
+                           book_id         BIGINT NOT NULL,
+                           quantity        INTEGER NOT NULL CHECK (quantity > 0),
+                           unit_price      DECIMAL(10,2) NOT NULL,     -- price at time of order
+                           subtotal        DECIMAL(10,2) NOT NULL,     -- quantity × unit_price
+
+                           FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+                           FOREIGN KEY (book_id)  REFERENCES books(id)  ON DELETE RESTRICT
+);
+
+-- Reviews table
 CREATE TABLE reviews (
-    id      serial PRIMARY KEY,
-    rating  integer NOT NULL CHECK (rating >= 1 AND rating <= 5),
-    date    timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    book_id integer NOT NULL,
-    user_id integer NOT NULL,
-    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                       id              SERIAL PRIMARY KEY,
+                       rating          INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+                       title           VARCHAR(150),
+                       comment         TEXT,
+                       date            TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                       book_id         BIGINT NOT NULL,
+                       user_id         INTEGER NOT NULL,
+
+                       FOREIGN KEY (book_id) REFERENCES books(id)   ON DELETE CASCADE,
+                       FOREIGN KEY (user_id) REFERENCES users(id)   ON DELETE CASCADE
 );
 
--- Performance indexes on foreign keys
-CREATE INDEX idx_reviews_book_id  ON reviews(book_id);
-CREATE INDEX idx_reviews_user_id  ON reviews(user_id);
-CREATE INDEX idx_orders_book_id   ON orders(book_id);
-CREATE INDEX idx_orders_user_id   ON orders(user_id);
-```
+-- =============================================================================
+-- Indexes – performance & foreign key lookups
+-- =============================================================================
+
+-- Books
+CREATE INDEX idx_books_title  ON books (title);
+CREATE INDEX idx_books_author ON books (author);
+CREATE INDEX idx_books_isbn   ON books (isbn);
+
+-- Users
+CREATE INDEX idx_users_email  ON users (email);
+CREATE INDEX idx_users_role   ON users (role);
+
+-- Orders
+CREATE INDEX idx_orders_user_id   ON orders (user_id);
+CREATE INDEX idx_orders_status    ON orders (status);
+CREATE INDEX idx_orders_order_nr  ON orders (order_nr);
+
+-- Order items
+CREATE INDEX idx_order_items_order_id ON order_items (order_id);
+CREATE INDEX idx_order_items_book_id  ON order_items (book_id);
+
+-- Reviews
+CREATE INDEX idx_reviews_book_id ON reviews (book_id);
+CREATE INDEX idx_reviews_user_id ON reviews (user_id);
+CREATE INDEX idx_reviews_rating  ON reviews (rating);
+CREATE INDEX idx_reviews_date    ON reviews (date);```
 
 ## Mock Data
 
@@ -104,7 +145,7 @@ INSERT INTO books (isbn, title, author, description, publication_year, genre, la
 ('978-3104027258', 'Homo Deus', 'Yuval Noah Harari', 'A provocative exploration of humanity''s future in the age of data and algorithms.', 2015, 'Non-Fiction', 'German', 24.00, 8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 ('978-2266264327', 'L''Étranger', 'Albert Camus', 'Existential novel about absurdity, indifference, and the human condition.', 1942, 'Philosophy', 'French', 8.50, 22, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 ('978-8804668787', 'Il nome della rosa', 'Umberto Eco', 'A medieval murder mystery filled with semiotics, theology, and libraries.', 1980, 'Historical Mystery', 'Italian', 16.90, 11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
-```
+````
 
 ### Table: USERS
 
@@ -124,6 +165,65 @@ INSERT INTO users (
     ('sophie.leserin@web.de',      '$2b$12$fakehashabcdef1234', 'Sophie', 'Leserin',  'USER',  NULL,               'Leserallee 3, 50667 Köln',        TRUE),
     ('admin@libroegge.de',         '$2b$12$adminhashstrong2026', 'Admin',  'Admin',    'ADMIN', '+49 30 5555555',   'Verwaltung 1, 20095 Hamburg',     TRUE),
     ('inactive.user@test.com',     '$2b$12$fakehashzzzzzzzzzz', 'Inactive','User',     'USER',  NULL,               NULL,                              FALSE);
+```
+
+### Table: Reviews
+
+```sql
+    INSERT INTO reviews (
+      book_id, user_id, rating, title, comment,created_at, updated_at, is_helpful_count
+    ) VALUES
+      (1, 1, 5, 'A timeless favorite', 'Jane Austen’s wit is unmatched. Elizabeth Bennet is such an icon.',
+      CURRENT_TIMESTAMP - 18, CURRENT_TIMESTAMP - 18, 14),
+      (1, 3, 4, 'Charming but dated', 'Loved the romance, but some social commentary feels old-fashioned now.',
+      CURRENT_TIMESTAMP - 12, CURRENT_TIMESTAMP - 12, 5),
+      (2, 2, 5, 'Perfect adventure', 'Bilbo’s journey is pure magic. Read it as a child and still love it.',
+      CURRENT_TIMESTAMP - 25, CURRENT_TIMESTAMP - 25, 11),
+      (2, 4, 5, 'Epic fantasy start', 'Tolkien at his most accessible. Great introduction to Middle-earth.',
+      CURRENT_TIMESTAMP - 9, CURRENT_TIMESTAMP - 9, 8),
+      (3, 1, 5, 'Profound and necessary', 'Harper Lee captures empathy and injustice so powerfully.',
+      CURRENT_TIMESTAMP - 7, CURRENT_TIMESTAMP - 7, 19),
+      (3, 5, 5, 'Still relevant today', 'Atticus Finch is a role model. Everyone should read this.',
+      CURRENT_TIMESTAMP - 4, CURRENT_TIMESTAMP - 4, 13),
+      (4, 3, 4, 'Unsettling masterpiece', 'Big Brother is watching – and it feels more real every year.',
+      CURRENT_TIMESTAMP - 15, CURRENT_TIMESTAMP - 15, 10),
+      (4, 2, 5, 'Chilling warning', 'Orwell predicted so much. A must-read for understanding power.',
+      CURRENT_TIMESTAMP - 6, CURRENT_TIMESTAMP - 6, 7),
+      (5, 4, 3, 'Beautiful writing, empty story', 'Gorgeous prose, but the characters left me cold.',
+      CURRENT_TIMESTAMP - 10, CURRENT_TIMESTAMP - 10, 4),
+      (5, 1, 4, 'The American Dream dissected', 'Fitzgerald nails the illusion of wealth and happiness.',
+      CURRENT_TIMESTAMP - 2, CURRENT_TIMESTAMP - 2, 6);
+```
+
+### Table: Orders
+
+```sql
+      INSERT INTO orders (
+        user_id, order_nr, status, total_amount, created_at, updated_at, shipping_address, payment_method
+      ) VALUES
+        (1, 'ORD-20260219-001', 'DELIVERED',  28.48, CURRENT_TIMESTAMP - 20, CURRENT_TIMESTAMP - 20, 'Musterstraße 12, 80331 München', 'CREDIT_CARD'),
+        (2, 'ORD-20260219-002', 'SHIPPED',    12.50, CURRENT_TIMESTAMP - 15, CURRENT_TIMESTAMP - 15, 'Beispielweg 5, 10115 Berlin',      'PAYPAL'),
+        (3, 'ORD-20260219-003', 'PENDING',    19.74, CURRENT_TIMESTAMP - 10, CURRENT_TIMESTAMP - 10, 'Leserallee 3, 50667 Köln',         'CREDIT_CARD'),
+        (4, 'ORD-20260219-004', 'DELIVERED',  35.99, CURRENT_TIMESTAMP - 5,  CURRENT_TIMESTAMP - 5,  'Verwaltung 1, 20095 Hamburg',     'CREDIT_CARD'),
+        (1, 'ORD-20260219-005', 'CANCELLED',   9.99, CURRENT_TIMESTAMP - 2,  CURRENT_TIMESTAMP - 2,  'Musterstraße 12, 80331 München', 'PAYPAL');
+        -- Fake order_items (multiple items per order)
+      INSERT INTO order_items (
+        order_id, book_id, quantity, unit_price, subtotal
+      ) VALUES
+      -- Order 1 (user 1): two books
+        (1, 1, 1,  9.99,  9.99),
+        (1, 3, 2,  8.75, 17.50),   -- subtotal 27.49 + shipping/tax ~28.48
+      -- Order 2 (user 2): one book
+        (2, 2, 1, 12.50, 12.50),
+      -- Order 3 (user 3): one book
+        (3, 5, 2,  7.99, 15.98),
+      -- Order 4 (user 4): three books
+        (4, 4, 1, 11.20, 11.20),
+        (4, 1, 1,  9.99,  9.99),
+        (4, 2, 1, 12.50, 12.50),   -- total ~33.69 + tax/shipping ~35.99
+      -- Order 5 (user 1): cancelled single item
+        (5, 1, 1,  9.99,  9.99);
+
 ```
 
 ## Development

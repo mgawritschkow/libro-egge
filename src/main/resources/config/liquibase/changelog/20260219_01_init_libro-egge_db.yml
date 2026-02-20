@@ -1,8 +1,8 @@
 databaseChangeLog:
   - changeSet:
-      id: 2026-02-19-initial-schema-libroegge
+      id: 2026-02-20-initial-schema-libroegge-with-auditing
       author: michael.gawritschkow
-      comment: Initial schema for LIBROEGGE - books, users, orders, reviews (extended books table for MVP)
+      comment: Initial schema for LIBROEGGE with Spring Data JPA auditing columns (created_by/date, last_modified_by/date)
       changes:
         # ── books table ───────────────────────────────────────────────────────
         - createTable:
@@ -28,7 +28,7 @@ databaseChangeLog:
                   name: author
                   type: varchar(255)
                   constraints:
-                    nullable: false # string for MVP; later → authors table + relation
+                    nullable: false
               - column:
                   name: description
                   type: text
@@ -43,50 +43,59 @@ databaseChangeLog:
                   name: genre
                   type: varchar(100)
                   constraints:
-                    nullable: true # e.g. "Fiction", "Science", "Mystery"
+                    nullable: true
               - column:
                   name: language
                   type: varchar(50)
                   constraints:
-                    nullable: true # e.g. "English", "German", "French"
+                    nullable: true
               - column:
                   name: price
                   type: decimal(10,2)
                   constraints:
-                    nullable: true # e.g. 24.99 – important if selling/ordering
+                    nullable: true
               - column:
                   name: stock_quantity
                   type: integer
                   defaultValueNumeric: 0
                   constraints:
                     nullable: false
-              - column:
-                  name: created_at
-                  type: timestamp with time zone
-                  defaultValueComputed: CURRENT_TIMESTAMP
-                  constraints:
-                    nullable: false
-              - column:
-                  name: updated_at
-                  type: timestamp with time zone
-                  defaultValueComputed: CURRENT_TIMESTAMP
-                  constraints:
-                    nullable: false
 
-        # Optional: add simple index for faster title/author search (MVP performance)
+              # Auditing columns from AbstractAuditingEntity
+              - column:
+                  name: created_by
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_date
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_modified_by
+                  type: varchar(50)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: last_modified_date
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: true
+
+        # Indexes on books (title/author/isbn for search)
         - createIndex:
             indexName: idx_books_title
             tableName: books
-            columns:
-              - column:
-                  name: title
-
+            columns: [{ name: title }]
         - createIndex:
             indexName: idx_books_author
             tableName: books
-            columns:
-              - column:
-                  name: author
+            columns: [{ name: author }]
+        - createIndex:
+            indexName: idx_books_isbn
+            tableName: books
+            columns: [{ name: isbn }]
 
         # ── users table ───────────────────────────────────────────────────────
         - createTable:
@@ -97,71 +106,71 @@ databaseChangeLog:
                   type: serial
                   constraints:
                     primaryKey: true
-
               - column:
                   name: email
                   type: varchar(255)
                   constraints:
                     nullable: false
                     unique: true
-
               - column:
                   name: password_hash
                   type: varchar(255)
                   constraints:
                     nullable: false
-
               - column:
                   name: firstname
                   type: varchar(255)
                   constraints:
                     nullable: false
-
               - column:
                   name: lastname
                   type: varchar(255)
                   constraints:
                     nullable: false
-
               - column:
                   name: role
                   type: varchar(50)
                   defaultValue: 'USER'
                   constraints:
                     nullable: false
-
               - column:
                   name: phone_number
                   type: varchar(30)
                   constraints:
                     nullable: true
-
               - column:
                   name: address
                   type: text
                   constraints:
                     nullable: true
-
-              - column:
-                  name: created_at
-                  type: timestamp with time zone
-                  defaultValueComputed: CURRENT_TIMESTAMP
-                  constraints:
-                    nullable: false
-
-              - column:
-                  name: updated_at
-                  type: timestamp with time zone
-                  defaultValueComputed: CURRENT_TIMESTAMP
-                  constraints:
-                    nullable: false
-
               - column:
                   name: is_active
                   type: boolean
                   defaultValueBoolean: true
                   constraints:
                     nullable: false
+
+              # Auditing columns
+              - column:
+                  name: created_by
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_date
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_modified_by
+                  type: varchar(50)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: last_modified_date
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: true
 
         # ── orders table ──────────────────────────────────────────────────────
         - createTable:
@@ -172,82 +181,79 @@ databaseChangeLog:
                   type: serial
                   constraints:
                     primaryKey: true
-
               - column:
                   name: user_id
                   type: integer
                   constraints:
                     nullable: false
-
               - column:
                   name: order_nr
                   type: varchar(50)
                   constraints:
                     nullable: false
-                    unique: true # e.g. ORD-20260219-001
-
+                    unique: true
               - column:
                   name: status
                   type: varchar(50)
                   defaultValue: 'PENDING'
                   constraints:
-                    nullable: false # PENDING, PAID, SHIPPED, DELIVERED, CANCELLED
-
+                    nullable: false
               - column:
                   name: total_amount
                   type: decimal(10,2)
                   constraints:
                     nullable: false
-
-              - column:
-                  name: created_at
-                  type: timestamp with time zone
-                  defaultValueComputed: CURRENT_TIMESTAMP
-                  constraints:
-                    nullable: false
-
-              - column:
-                  name: updated_at
-                  type: timestamp with time zone
-                  defaultValueComputed: CURRENT_TIMESTAMP
-                  constraints:
-                    nullable: false
-
               - column:
                   name: shipping_address
                   type: text
                   constraints:
-                    nullable: true # simple text for MVP
-
+                    nullable: true
               - column:
                   name: payment_method
                   type: varchar(50)
                   constraints:
-                    nullable: true # e.g. 'CREDIT_CARD', 'PAYPAL'
+                    nullable: true
 
-        # Foreign key to users
+              # Auditing columns
+              - column:
+                  name: created_by
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_date
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_modified_by
+                  type: varchar(50)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: last_modified_date
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: true
+
         - addForeignKeyConstraint:
             baseTableName: orders
             baseColumnNames: user_id
-            constraintName: fk_orders_users
             referencedTableName: users
             referencedColumnNames: id
-            onDelete: RESTRICT # don't delete orders if user deleted
+            constraintName: fk_orders_users
+            onDelete: RESTRICT
 
-        # Indexes
         - createIndex:
             indexName: idx_orders_user_id
             tableName: orders
-            columns:
-              - column: { name: user_id }
-
+            columns: [{ name: user_id }]
         - createIndex:
             indexName: idx_orders_status
             tableName: orders
-            columns:
-              - column: { name: status }
+            columns: [{ name: status }]
 
-        # ── order_items table (line items) ────────────────────────────────────
+        # ── order_items table ─────────────────────────────────────────────────
         - createTable:
             tableName: order_items
             columns:
@@ -256,67 +262,79 @@ databaseChangeLog:
                   type: serial
                   constraints:
                     primaryKey: true
-
               - column:
                   name: order_id
                   type: integer
                   constraints:
                     nullable: false
-
               - column:
                   name: book_id
                   type: integer
                   constraints:
                     nullable: false
-
               - column:
                   name: quantity
                   type: integer
                   constraints:
                     nullable: false
                     checkConstraint: quantity > 0
-
               - column:
                   name: unit_price
                   type: decimal(10,2)
                   constraints:
-                    nullable: false # price at time of order
-
+                    nullable: false
               - column:
                   name: subtotal
                   type: decimal(10,2)
                   constraints:
-                    nullable: false # quantity × unit_price
+                    nullable: false
 
-        # Foreign keys
+              # Auditing columns (even for line items – useful for traceability)
+              - column:
+                  name: created_by
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_date
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_modified_by
+                  type: varchar(50)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: last_modified_date
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: true
+
         - addForeignKeyConstraint:
             baseTableName: order_items
             baseColumnNames: order_id
-            constraintName: fk_order_items_orders
             referencedTableName: orders
             referencedColumnNames: id
+            constraintName: fk_order_items_orders
             onDelete: CASCADE
 
         - addForeignKeyConstraint:
             baseTableName: order_items
             baseColumnNames: book_id
-            constraintName: fk_order_items_books
             referencedTableName: books
             referencedColumnNames: id
+            constraintName: fk_order_items_books
             onDelete: RESTRICT
 
-        # Indexes
         - createIndex:
             indexName: idx_order_items_order_id
             tableName: order_items
-            columns:
-              - column: { name: order_id }
-
+            columns: [{ name: order_id }]
         - createIndex:
             indexName: idx_order_items_book_id
             tableName: order_items
-            columns:
-              - column: { name: book_id }
+            columns: [{ name: book_id }]
 
         # ── reviews table ─────────────────────────────────────────────────────
         - createTable:
@@ -327,52 +345,32 @@ databaseChangeLog:
                   type: serial
                   constraints:
                     primaryKey: true
-
               - column:
                   name: book_id
                   type: integer
                   constraints:
                     nullable: false
-
               - column:
                   name: user_id
                   type: integer
                   constraints:
                     nullable: false
-
               - column:
                   name: rating
                   type: integer
                   constraints:
                     nullable: false
                     checkConstraint: rating >= 1 AND rating <= 5
-
               - column:
                   name: title
                   type: varchar(150)
                   constraints:
                     nullable: true
-
               - column:
                   name: comment
                   type: text
                   constraints:
                     nullable: true
-
-              - column:
-                  name: created_at
-                  type: timestamp with time zone
-                  defaultValueComputed: CURRENT_TIMESTAMP
-                  constraints:
-                    nullable: false
-
-              - column:
-                  name: updated_at
-                  type: timestamp with time zone
-                  defaultValueComputed: CURRENT_TIMESTAMP
-                  constraints:
-                    nullable: false
-
               - column:
                   name: is_helpful_count
                   type: integer
@@ -380,38 +378,53 @@ databaseChangeLog:
                   constraints:
                     nullable: false
 
-        # Foreign keys
+              # Auditing columns
+              - column:
+                  name: created_by
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_date
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_modified_by
+                  type: varchar(50)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: last_modified_date
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: true
+
         - addForeignKeyConstraint:
             baseTableName: reviews
             baseColumnNames: book_id
-            constraintName: fk_reviews_books
             referencedTableName: books
             referencedColumnNames: id
+            constraintName: fk_reviews_books
             onDelete: CASCADE
 
         - addForeignKeyConstraint:
             baseTableName: reviews
             baseColumnNames: user_id
-            constraintName: fk_reviews_users
             referencedTableName: users
             referencedColumnNames: id
+            constraintName: fk_reviews_users
             onDelete: CASCADE
 
-        # Indexes (performance for book/user filtering)
         - createIndex:
             indexName: idx_reviews_book_id
             tableName: reviews
-            columns:
-              - column: { name: book_id }
-
+            columns: [{ name: book_id }]
         - createIndex:
             indexName: idx_reviews_user_id
             tableName: reviews
-            columns:
-              - column: { name: user_id }
-
+            columns: [{ name: user_id }]
         - createIndex:
             indexName: idx_reviews_rating
             tableName: reviews
-            columns:
-              - column: { name: rating }
+            columns: [{ name: rating }]

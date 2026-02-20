@@ -1,10 +1,10 @@
+${AnsiColor.GREEN}  ██╗     ██╗██████╗ ██████╗  ██████╗       ███████╗  ██████╗  ██████╗  ███████╗
+${AnsiColor.GREEN}  ██║     ██║██╔══██╗██╔══██╗██╔═══██║      ██╔════╝ ██╔════╝ ██╔════╝  ██╔════╝
+${AnsiColor.GREEN}  ██║     ██║██████╔╝██████╔╝██║   ██║      █████╗   ██║  ███╗██║  ███╗ █████╗
+${AnsiColor.GREEN}  ██║     ██║██╔══██╗██╔══██╗██║   ██║      ██╔══╝   ██║   ██║██║   ██║ ██╔══╝
+${AnsiColor.GREEN}  ███████╗██║██████╔╝██║  ██║╚██████╔╝      ███████╗ ╚██████╔╝╚██████╔╝ ███████╗
+${AnsiColor.GREEN}  ╚══════╝╚═╝╚═════╝ ╚═╝  ╚═╝ ╚═════╝       ╚══════╝  ╚═════╝  ╚═════╝  ╚══════╝
+${AnsiColor.RED}                                   LIBRO-EGGE
 
-  ${AnsiColor.GREEN}      ██╗${AnsiColor.RED} ██╗   ██╗ ████████╗ ███████╗   ██████╗ ████████╗ ████████╗ ███████╗
-  ${AnsiColor.GREEN}      ██║${AnsiColor.RED} ██║   ██║ ╚══██╔══╝ ██╔═══██╗ ██╔════╝ ╚══██╔══╝ ██╔═════╝ ██╔═══██╗
-  ${AnsiColor.GREEN}      ██║${AnsiColor.RED} ████████║    ██║    ███████╔╝ ╚█████╗     ██║    ██████╗   ███████╔╝
-  ${AnsiColor.GREEN}██╗   ██║${AnsiColor.RED} ██╔═══██║    ██║    ██╔════╝   ╚═══██╗    ██║    ██╔═══╝   ██╔══██║
-  ${AnsiColor.GREEN}╚██████╔╝${AnsiColor.RED} ██║   ██║ ████████╗ ██║       ██████╔╝    ██║    ████████╗ ██║  ╚██╗
-  ${AnsiColor.GREEN} ╚═════╝ ${AnsiColor.RED} ╚═╝   ╚═╝ ╚═══════╝ ╚═╝       ╚═════╝     ╚═╝    ╚═══════╝ ╚═╝   ╚═╝
-
-${AnsiColor.BRIGHT_BLUE}:: JHipster 🤓  :: Running Spring Boot ${spring-boot.version} :: Startup profile(s) ${spring.profiles.active} ::
-:: https://www.jhipster.tech ::${AnsiColor.DEFAULT}
+${AnsiColor.BRIGHT_BLUE}:: Stoecklin © 2025 Libro-Egge :: Running Spring Boot ${spring-boot.version} :: Startup profile(s) ${spring.profiles.active} ::
+:: https://www.stoecklin.com ::${AnsiColor.DEFAULT}
